@@ -1,0 +1,112 @@
+version: "3.8"
+
+services:
+
+  db:
+    image: mysql:latest
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      # - MYSQL_DATABASE=quotes
+      - MYSQL_ROOT_PASSWORD=boyhandsome
+    ports:
+      - '3307:3306'
+    volumes:
+      - db:/var/lib/mysql
+      - ./db:/docker-entrypoint-initdb.d/:ro
+    networks:
+      - app-networks
+
+  pgdb:
+    image: postgres:15.2
+    restart: always
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./pgdb:/var/lib/postgresql/data
+    networks:
+      - app-networks
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.2.1
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+    networks:
+      - app-networks
+
+  kafka:
+    image: confluentinc/cp-kafka:7.2.1
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_BROKER_ID: 1
+    networks:
+      - app-networks
+    depends_on:
+      - zookeeper
+    command: sh -c "((sleep 15 && kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic DEVELOP_TOPIC_FASTAPI)&) && /etc/confluent/docker/run "
+
+  redis:
+    hostname: redis
+    image: redis:7.0.11
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    networks:
+      - app-networks
+
+  mongodb:
+    image: mongo:6.0.6-jammy
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_DATABASE=develop
+      - MONGO_INITDB_ROOT_USERNAME=
+      - MONGO_INITDB_ROOT_PASSWORD=
+    volumes:
+      - db:/var/lib/mongodb
+      - ./mongo-entrypoint:/docker-entrypoint-initdb.d
+    networks:
+      - app-networks
+
+networks:
+  app-networks:
+    name: app-networks
+    driver: bridge
+
+volumes:
+  db:
+    driver: local
+  pgdb:
+    driver: local
+  zookeeper:
+    driver: local
+  kafka:
+    driver: local
+  redis:
+    driver: local
+  mongodb:
+    driver: local
