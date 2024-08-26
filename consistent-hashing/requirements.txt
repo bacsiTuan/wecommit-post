@@ -1,0 +1,5 @@
+aioredis==2.0.1
+redis==5.0.8
+redis-om==0.3.2
+mmh3
+

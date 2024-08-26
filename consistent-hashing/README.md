@@ -1,4 +1,4 @@
-# redis pubsub
+# consistent-hashing
 ## install required packages
 activate virtual env (optional)
 ```bash
@@ -11,13 +11,14 @@ run redis with docker
 ```bash
 docker compose up -d redis
 ```
+
 install dependencies
 ```bash
-cd redis-pubsub
+cd consistent-hashing
 pip install -r requirements.txt
 ```
 
 ## run command
 ```bash
-python rd_sub.py
-python rd_pub.py
+python master.py
+python worker.py
