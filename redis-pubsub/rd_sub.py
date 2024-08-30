@@ -12,7 +12,6 @@ if __name__ == '__main__':
     pub.subscribe(CHANNEL)
 
     for message in pub.listen():
-        if message is not None and isinstance(message, dict) and message.get("data") != 1:
+        if message is not None and isinstance(message, dict) and message.get("type") == "message":
             data = json.loads(message.get('data'))
-            # print(data["tuan"])
             print(f"Message: {data}")
